@@ -1,0 +1,25 @@
+experiment_name: "base_small_R50"
+seed: 0
+
+problem:
+  num_workers: 5
+  num_tasks: 30
+  map_size: [100.0, 100.0]
+  repair_duration: 10
+  communication_range: 50.0
+
+failure_model:
+  # p_i(t) = 1 - exp(-lambda * H_i)
+  type: "exp"
+  lambda: 0.001
+  eta: 0.25              # 故障時効率 (1/n を想定)
+
+ga:
+  population_size: 100
+  generations: 200
+  crossover_rate: 0.9
+  mutation_rate_route: 0.2
+  mutation_rate_repair: 0.05
+
+output:
+  base_dir: "results"
