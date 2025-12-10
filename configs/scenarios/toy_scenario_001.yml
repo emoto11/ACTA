@@ -20,9 +20,10 @@ repair_depot:
 
 failure_model:
   module: acta.sim.failure_models
-  class: SimpleFailureModel
+  class: WeibullFailureModel
   params:
     lambd: 0.01   # 故障率 λ
+    k: 1.5        # 形状パラメータ k
 
 task_selection:
   module: acta.sim.task_selection

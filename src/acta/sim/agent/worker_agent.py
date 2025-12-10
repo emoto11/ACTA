@@ -36,6 +36,7 @@ class WorkerAgent(Agent):
         # 故障関係のパラメータ・状態
         self.state: Literal["healthy", "failed"] = "healthy"
         self.H = initial_H
+        self.delta_H = 0.0    # 前ステップの増分
         self.fatigue_move = fatigue_move  # 移動による疲労蓄積率
         self.fatigue_work = fatigue_work  # 作業による疲労蓄積率
 
@@ -93,11 +94,12 @@ class WorkerAgent(Agent):
      # ------------------------------------------------------------------
     # ヘルパー
     # ------------------------------------------------------------------
-    def _update_failure_state_at_step_start(self) -> None:
-        """ターン開始時の H に基づいて故障判定."""
+    def _update_failure(self) -> None:
+        """ターン開始時の H, delta_H に基づいて故障判定."""
         if self.state != "healthy":
             return
-        p_fail = self.model.failure_model.failure_prob(self.H)
+        p_fail = self.model.failure_model.failure_prob(self.H, self.delta_H)
+        self.delta_H = 0.0  # 故障判定後にリセット
         if self.random.random() < p_fail:
             self.state = "failed"
 
@@ -151,13 +153,13 @@ class WorkerAgent(Agent):
 
             # 移動による疲労
             self.H += self.fatigue_move * move_time
+            self.delta_H += self.fatigue_move * move_time
 
             return True, move_time, remaining_dt
 
         # まだ到達しない → 向きだけ合わせて一歩進む
         if speed <= 0.0:
             # 速度0なら動けない（仕様次第でここを変えてもよい）
-            # とりあえず「動けないが時間だけ経過して疲労も増えない」挙動にするなら:
             return False, 0.0, dt
 
         ratio = max_step_dist / dist
@@ -169,6 +171,7 @@ class WorkerAgent(Agent):
 
         # dt 時間フルに移動している
         self.H += self.fatigue_move * dt
+        self.delta_H += self.fatigue_move * dt
 
         return False, dt, 0.0
 
@@ -180,6 +183,9 @@ class WorkerAgent(Agent):
             return
 
         dt = self.model.time_step
+
+        # 故障判定
+        self._update_failure()
 
         if self.mode == "repairing":
             self._repair(dt)
@@ -212,10 +218,17 @@ class WorkerAgent(Agent):
 
         arrived, move_time, remaining_dt = self._move_towards((rx, ry), dt, current_speed)
 
-        if arrived:
-            # 元の仕様通り: 到着したステップでは「残り時間があっても」修理開始だけにする
+        # まだ到達していないなら、このステップは移動だけ
+        if not arrived:
+            return
+        
+        # 到着したが作業する時間は残っていないステップ
+        if remaining_dt <= 1e-8:
             self.mode = "repairing"
-            self.repair_time_left = self.model.cfg.repair_duration
+            return
+        # 到着していたら修理モードへ
+        self.mode = "repairing"
+        self.repair_time_left = self.model.cfg.repair_duration - remaining_dt
 
     # -------------------------------
     # 移動＋作業（共通移動処理を利用）
@@ -224,9 +237,6 @@ class WorkerAgent(Agent):
         if self.target_task is None:
             logger.error(f"Worker {self.worker_id} has no target task")
             raise RuntimeError("Worker has no target task")
-
-        # ターン開始時の故障判定
-        self._update_failure_state_at_step_start()
 
         current_speed = self._current_speed()
         current_throughput = self._current_throughput()
@@ -239,9 +249,7 @@ class WorkerAgent(Agent):
         if not arrived:
             return
 
-        # ここからは「タスク地点にいる」
-        # もともとタスク地点にいた場合: move_time=0, remaining_dt=dt
-        # 到着した場合: move_time>0, remaining_dt = dt - move_time
+        # ここからは「タスク地点にいる」場合の処理
 
         if remaining_dt <= 1e-8:
             # 到着したが作業する時間は残っていないステップ
@@ -252,3 +260,4 @@ class WorkerAgent(Agent):
 
         # 作業分の疲労
         self.H += self.fatigue_work * remaining_dt
+        self.delta_H += self.fatigue_work * remaining_dt

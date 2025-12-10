@@ -7,7 +7,6 @@ uv run solara run scripts/acta_viz.py
 
 
 TODO:
-故障確率関数をワイブル分布にする
 アウトプット
 　　　メトリクス
 　　　データコレクター
