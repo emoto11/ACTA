@@ -45,26 +45,24 @@ class SimpleFailureModel:
     
 @dataclass
 class WeibullFailureModel:
-    lambd: float  # スケール
-    k: float      # 形状 (k>1 で wear-out)
+    lam: float  # スケール（H単位で直接：H=lamで約63%故障）
+    k: float    # 形状
 
     def failure_prob(self, H: float) -> float:
-        """Weibull の累積故障確率 F(H)=1-exp(-(λH)^k)."""
-        if H <= 0 or self.lambd <= 0 or self.k <= 0:
+        if H <= 0 or self.lam <= 0 or self.k <= 0:
             return 0.0
-        return 1.0 - math.exp(- (self.lambd * H) ** self.k)
-    
+        return 1.0 - math.exp(- (H / self.lam) ** self.k)
+
     def failure_prob_step(self, H: float, delta_H: float) -> float:
-        if delta_H <= 0 or self.lambd <= 0 or self.k <= 0:
+        if delta_H <= 0 or self.lam <= 0 or self.k <= 0:
             return 0.0
 
         def F(x: float) -> float:
-            return 1.0 - math.exp(- (self.lambd * x) ** self.k)
+            return 1.0 - math.exp(- (x / self.lam) ** self.k)
 
         F_old = F(H)
         F_new = F(H + delta_H)
 
-        # 条件付き確率: これまで生き残っている前提で、このステップで壊れる確率
         if F_old >= 1.0:
             return 1.0
         return (F_new - F_old) / (1.0 - F_old)
