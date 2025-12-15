@@ -1,4 +1,5 @@
 scenario_name: "toy_scenario_001"
+output_dir: results
 
 seed: 0
 
@@ -22,7 +23,7 @@ failure_model:
   module: acta.sim.failure_models
   class: WeibullFailureModel
   params:
-    lambd: 0.01   # 故障率 λ
+    lam: 200   # 故障率 λ
     k: 1.5        # 形状パラメータ k
 
 # task_selection:
@@ -30,17 +31,25 @@ failure_model:
 #   class: NearestIncompleteTaskSelector
 #   params: {}
 
+# task_selection:
+#   module: acta.sim.task_selection
+#   class: GABasedTaskSelector
+#   params:
+#     interval: 50
+#     pop_size: 100
+#     generations: 1000
+#     elitism_rate: 0.1
+#     seed: 123
+#     L_max: 5
+#     seed: 1234
+#     trials: 5
+
 task_selection:
   module: acta.sim.task_selection
-  class: GABasedTaskSelector
+  class: ADSBaseSelector
   params:
-    interval: 500
-    pop_size: 10
-    generations: 1000
-    elitism_rate: 0.1
-    seed: 123
-    L_max: 5
-    seed: 1234
+    alpha_risk: 1.0
+    max_rounds: 5
 
 workers_csv: "toy_workers.csv"
 tasks_csv:   "toy_tasks.csv"

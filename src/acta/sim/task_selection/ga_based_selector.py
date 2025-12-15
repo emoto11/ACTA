@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, List, Optional, Tuple
 
 from acta.ga.evaluation import ExpectedMakespanEvaluator, OutsidePathEvaluator
 from acta.sim.agent import WorkerAgent, TaskAgent
@@ -29,6 +29,7 @@ class GABasedTaskSelector(TaskSelector):
         elitism_rate: float,
         L_max: int,
         seed: int,
+        trials: int,
     ) -> None:
         self.interval = interval
         self.pop_size = pop_size
@@ -36,6 +37,7 @@ class GABasedTaskSelector(TaskSelector):
         self.elitism_rate = elitism_rate
         self.L_max = L_max
         self.seed = seed
+        self.trials = trials
 
         # 一度 GA を回した結果のベスト個体を保持しておく
         self._best_individual: Optional[Individual] = None
@@ -48,35 +50,56 @@ class GABasedTaskSelector(TaskSelector):
     # --------------------------------------------------
     def _ensure_plan(self, model: ACTAScenarioModel) -> None:
         """
-        GA を実行して新しいタスク計画を作る。
+        GA を複数回実行し、目的値（makespan, outside）の中央値となる試行結果を採用する。
         """
         num_workers = len(model.workers)
         num_tasks = len(model.tasks)
 
-        # --- 評価関数（簡易版） ---
-        # 今は「ワーカーごとの担当タスク数の最大値」を最小化するだけ。
+        # Evaluator は毎回 new しなくてもよい（evaluate 内で使い回す）
+        makespan_evaluator = ExpectedMakespanEvaluator(model)
+        outside_evaluator = OutsidePathEvaluator(model)
+
         def evaluate(ind: Individual) -> list[float]:
-            makespan_evaluator = ExpectedMakespanEvaluator(model)
-            outside_evaluator = OutsidePathEvaluator(model)
             makespan = makespan_evaluator(ind)[0]
             outside = outside_evaluator(ind)[0]
-            return [float(makespan), float(outside)]  # 小さいほど良い
+            return [float(makespan) + float(outside)]  # 小さいほど良い
 
-        ga = SimpleGA(
-            num_workers=num_workers,
-            num_tasks=num_tasks,
-            L_max=self.L_max,
-            pop_size=self.pop_size,
-            generations=self.generations,
-            elitism_rate=self.elitism_rate,
-            evaluate=evaluate,
-            seed=self.seed,
-        )
+        results: List[Tuple[Tuple[float, float], int, Individual]] = []
 
-        self._best_individual = ga.run()
+        base_seed = self.seed
+        for t in range(self.trials):
+            trial_seed = base_seed + t
+
+            ga = SimpleGA(
+                num_workers=num_workers,
+                num_tasks=num_tasks,
+                L_max=self.L_max,
+                pop_size=self.pop_size,
+                generations=self.generations,
+                elitism_rate=self.elitism_rate,
+                evaluate=evaluate,
+                seed=trial_seed,
+            )
+
+            ind = ga.run()
+            obj = tuple(float(x) for x in ind.objectives[:2])  # (makespan, outside)
+            results.append((obj, trial_seed, ind))
+
+        # 目的値で辞書順ソートして中央値を取る（makespanとoutsideの和）
+        results.sort(key=lambda x: x[0][0])
+
+        median_idx = len(results) // 2
+        median_obj, median_seed, median_ind = results[median_idx]
+
+        self._best_individual = median_ind
+
         logger.info(
-            "[GABasedTaskSelector] GA plan updated. best_objectives=%s",
-            self._best_individual.objectives,
+            "[GABasedTaskSelector] GA plan updated via median-of-%d trials. "
+            "chosen_seed=%d chosen_objectives=%s all_objectives=%s",
+            self.trials,
+            median_seed,
+            median_obj,
+            [r[0] for r in results],
         )
 
     # --------------------------------------------------

@@ -65,7 +65,7 @@ class SimpleGA:
     # -------------------------
     def tournament_select(self) -> Individual:
         comps = self.rng.sample(self.population, self.tournament_size)
-        return min(comps, key=lambda ind: ind.objectives[0] + ind.objectives[1])
+        return min(comps, key=lambda ind: ind.objectives[0])
 
     # -------------------------
     # GA 実行
@@ -77,7 +77,7 @@ class SimpleGA:
 
         for gen in range(self.generations):
             # --- 現世代からエリートを抜き出して保存 ---
-            elites = sorted(self.population, key=lambda ind: ind.objectives[0] + ind.objectives[1])[:elite_k]
+            elites = sorted(self.population, key=lambda ind: ind.objectives[0])[:elite_k]
             elites = [deepcopy(e) for e in elites]
 
             # --- 次世代個体群の生成 ---
@@ -94,8 +94,8 @@ class SimpleGA:
                 # print(child.routes, child.repairs, child.objectives)
 
             self.population = elites + offspring
-            best = min(self.population, key=lambda ind: ind.objectives[0] + ind.objectives[1])
+            # best = min(self.population, key=lambda ind: ind.objectives[0])
             # print(gen, best.routes, best.repairs, best.objectives)
 
-        self.best = min(self.population, key=lambda ind: ind.objectives[0] + ind.objectives[1])
+        self.best = min(self.population, key=lambda ind: ind.objectives[0])
         return self.best

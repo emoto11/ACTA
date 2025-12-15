@@ -8,14 +8,14 @@ import solara
 from mesa.visualization import SolaraViz, make_space_component
 from mesa.visualization.components import AgentPortrayalStyle
 
-from acta.sim.scenario_loader import load_scenario_config
+from acta.config_loader import load_scenario_config
 from acta.sim.model import ACTAScenarioModel
 from acta.sim.agent import WorkerAgent, TaskAgent, CommanderAgent
 
 
 # プロジェクトルート（scripts/ の 1つ上）
 ROOT_DIR = Path(__file__).resolve().parent.parent
-SCENARIO_DIR = ROOT_DIR / "configs" / "scenarios"
+SCENARIO_DIR = ROOT_DIR / "configs"
 
 
 class ACTAVisModel(ACTAScenarioModel):

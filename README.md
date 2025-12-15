@@ -1,7 +1,7 @@
 # ACTA
 Optimization Framework of Task Allocation in Extreme Environments with Asymmetric-Communication Condition
 
-uv run python scripts/run_sim_once.py --scenario configs/scenarios/toy_scenario_001.yml
+uv run python scripts/run_sim_once.py --scenario configs/toy_scenario_001.yml
 
 uv run solara run scripts/acta_viz.py
 

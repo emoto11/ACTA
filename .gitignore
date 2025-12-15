@@ -1,0 +1,36 @@
+# ===== Python 基本 =====
+__pycache__/
+*.py[cod]
+*$py.class
+
+# ===== 仮想環境 =====
+.venv/
+env/
+venv/
+
+# ===== パッケージング関連 =====
+dist/
+build/
+*.egg-info/
+
+# ===== キャッシュ類 =====
+.cache/
+.pytest_cache/
+.mypy_cache/
+.hypothesis/
+
+# ===== Jupyter Notebook =====
+.ipynb_checkpoints/
+
+# ===== ログ =====
+*.log
+
+# ===== VS Code =====
+.vscode/
+
+# ===== uv / pip / lockfile 系（任意で ignore） =====
+.pdm-python
+.pixi/
+
+# ===== プロジェクト固有 =====
+/results/

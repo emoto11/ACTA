@@ -41,16 +41,23 @@ class NearestIncompleteTaskSelector(TaskSelector):
                 w.target_task = None
                 continue
 
-            # ここから下は「通常のタスク割当」
-            if not incomplete_tasks:
+            # w が「未完了」と信じているタスクから最近傍を探す
+            candidates = []
+            for tid, tinfo in w.info_state.tasks.items():
+                if tinfo.status == "done":
+                    continue
+                candidates.append((tid, tinfo))
+
+            if not candidates:
                 w.target_task = None
+                w.mode = "idle"
                 continue
 
-            # 例: いままで通り最近傍タスクを選ぶ
-            best_t = min(
-                incomplete_tasks,
-                key=lambda t: model.distance(w, t),
+            # 最近傍（推定座標ベース）
+            best_tid, _ = min(
+                candidates,
+                key=lambda pair: model.distance(w.pos, model.tasks[pair[0]].pos),
             )
-            w.target_task = best_t
-            w.mode = "work"
 
+            w.target_task = model.tasks[best_tid]
+            w.mode = "work"

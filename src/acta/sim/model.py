@@ -1,5 +1,6 @@
 from __future__ import annotations
 from importlib import import_module
+from pathlib import Path
 from typing import Dict, Tuple
 
 from mesa import Model
@@ -7,15 +8,24 @@ from mesa.space import ContinuousSpace
 
 from acta.sim.failure_models import FailureModel
 from acta.sim.agent import WorkerAgent, TaskAgent, CommanderAgent
-from acta.sim.scenario_loader import ScenarioConfig
+from acta.config_loader import ScenarioConfig
 from acta.sim.task_selection import TaskSelector
+from acta.utils.datacollector import StepDataCollector
 
 class ACTAScenarioModel(Model):
-    def __init__(self, cfg: ScenarioConfig):
-        super().__init__(seed=cfg.seed)
+    def __init__(self, cfg: ScenarioConfig, seed: int, write_csv: bool):
+        super().__init__(seed=seed)
 
         self.cfg = cfg
         self.time_step = cfg.time_step
+
+        # データ収集
+        out_dir = Path(cfg.output_dir)
+        scenario_name = cfg.scenario_name
+        prefix = f"seed{seed:04d}"
+        self.data_collector = StepDataCollector(out_dir=out_dir, scenario_name=scenario_name, prefix=prefix, flush_every=1)
+        self.data_collector.open()
+        self.write_csv = write_csv
 
         self.space = ContinuousSpace(
             x_max=cfg.space_width,
@@ -124,6 +134,9 @@ class ACTAScenarioModel(Model):
         for t in tasks:
             t.end_step()
 
+        if self.write_csv:
+            self.data_collector.collect(self)
+
     def all_tasks_done(self) -> bool:
         return all(t.status == "done" for t in self.tasks.values())
 
@@ -133,5 +146,8 @@ class ACTAScenarioModel(Model):
             t.finished_step for t in self.tasks.values() if t.finished_step is not None
         ]
         if not finished_steps:
-            return 0.0
+            return self.cfg.max_steps
         return max(finished_steps) * self.time_step
+    
+    def finalize(self) -> None:
+        self.data_collector.close()

@@ -256,7 +256,7 @@ class WorkerAgent(Agent):
         if self.repair_time_left <= 0.0:
             self.state = "healthy"
             self.H = 0.0
-            self.mode = "work"
+            self.mode = "idle"
             self.repair_time_left = 0.0
 
     # -------------------------------
@@ -284,7 +284,9 @@ class WorkerAgent(Agent):
     # 移動＋作業（共通移動処理を利用）
     # -------------------------------
     def _step_work(self, dt: float) -> None:
+        # ターゲットタスクが無ければ何もしない
         if self.target_task is None:
+            self.mode = "idle"
             return
 
         current_speed = self._current_speed()
