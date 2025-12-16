@@ -1,8 +1,6 @@
 scenario_name: "toy_scenario_001"
 output_dir: results
 
-seed: 0
-
 space:
   width: 100.0
   height: 100.0

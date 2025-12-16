@@ -34,3 +34,4 @@ build/
 
 # ===== プロジェクト固有 =====
 /results/
+/configs/ga/
