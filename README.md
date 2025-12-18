@@ -52,7 +52,8 @@ cd ACTA
 ```
 ## Step 2 — Create virtual environment & install dependencies
 ```bash 
-uv venv source .venv/bin/activate uv sync 
+uv venv source.venv/bin/activate  
+uv sync 
 ```
 
 # 実行方法

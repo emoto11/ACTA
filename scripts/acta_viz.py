@@ -23,7 +23,7 @@ class ACTAVisModel(ACTAScenarioModel):
 
     def __init__(self, scenario_path: str):
         cfg = load_scenario_config(scenario_path)
-        super().__init__(cfg=cfg)
+        super().__init__(cfg=cfg, seed=1234, write_csv=False)
 
 
 # --- エージェントの描画スタイル ---
