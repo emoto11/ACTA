@@ -84,7 +84,8 @@ def main():
         label="±1 std",
     )
     Path("figures").mkdir(parents=True, exist_ok=True)
-    out_path = "figures" / args.out
+    out_path = Path("figures") / args.out
+
 
     plt.xlabel("Step")
     plt.ylabel("Information age (sum)")
