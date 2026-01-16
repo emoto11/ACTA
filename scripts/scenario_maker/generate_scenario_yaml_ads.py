@@ -28,8 +28,8 @@ def build_base_config() -> Dict[str, Any]:
                 "max_rounds": 5,
             },
         },
-        "workers_csv": "workers/workers.csv",
-        "tasks_csv": "toy_tasks.csv",
+        "workers_csv": (Path("../../workers") / "workers.csv").as_posix(),
+        "tasks_csv": (Path("../../tasks") / "toy_tasks.csv").as_posix(),
     }
 
 
@@ -82,7 +82,11 @@ def main() -> None:
             f"mr{mr}"
         )
 
-        cfg["tasks_csv"] = (Path("tasks") / task_file).as_posix()
+        cfg["output_dir"] = f"results/ADS/{cfg['scenario_name']}"
+
+
+
+        cfg["tasks_csv"] = (Path("../../tasks") / task_file).as_posix()
         cfg["failure_model"]["params"]["lam"] = lam
         cfg["failure_model"]["params"]["k"] = float(k)
         cfg["space"]["range"] = r
