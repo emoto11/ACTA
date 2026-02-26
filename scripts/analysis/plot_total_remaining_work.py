@@ -66,10 +66,26 @@ def main():
     plt.plot(step, mean, label="Mean total remaining work")
     plt.fill_between(step, mean - std, mean + std, alpha=0.3, label="±1 std")
 
-    plt.xlabel("Step")
-    plt.ylabel("Total remaining work")
-    plt.title("Total remaining work (mean ± std)")
-    plt.legend()
+
+    from matplotlib.ticker import MultipleLocator  # ← import に追加
+
+    ax = plt.gca()
+    ax.set_xlim(0, 500)
+    ax.xaxis.set_major_locator(MultipleLocator(50))
+
+    # 変更後（タイトルなし＋大きく）
+    LABEL_FS = 22
+    TICK_FS  = 18
+    LEG_FS   = 14
+
+    plt.xlabel("Step", fontsize=LABEL_FS)
+    plt.ylabel("Total remaining work", fontsize=LABEL_FS)
+    plt.tick_params(axis="both", which="major", labelsize=TICK_FS)
+    plt.legend(fontsize=LEG_FS)
+    # plt.xlabel("Step")
+    # plt.ylabel("Total remaining work")
+    # plt.title("Total remaining work (mean ± std)")
+    # plt.legend()
     plt.grid(True)
     plt.tight_layout()
 

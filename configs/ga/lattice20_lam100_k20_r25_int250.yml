@@ -1,0 +1,37 @@
+command_center:
+  position:
+  - 50.0
+  - 50.0
+failure_model:
+  class: WeibullFailureModel
+  module: acta.sim.failure_models
+  params:
+    k: 2.0
+    lam: 100
+output_dir: results/GA/lattice20_lam100_k20_r25_int250
+repair_depot:
+  position:
+  - 50.0
+  - 50.0
+  repair_duration: 10
+scenario_name: lattice20_lam100_k20_r25_int250
+sim:
+  max_steps: 500
+  time_step: 1.0
+space:
+  height: 100.0
+  range: 25
+  width: 100.0
+task_selection:
+  class: GABasedTaskSelector
+  module: acta.sim.task_selection
+  params:
+    L_max: 5
+    elitism_rate: 0.1
+    generations: 500
+    interval: 250
+    pop_size: 100
+    seed: 1234
+    trials: 5
+tasks_csv: ../../tasks/tasks_lattice20.csv
+workers_csv: ../../workers/workers.csv

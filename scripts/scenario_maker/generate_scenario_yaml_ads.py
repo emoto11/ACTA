@@ -61,11 +61,11 @@ def main() -> None:
         "tasks_sobol20.csv",
     ]
     lams = [100, 250, 400]
-    ks = [1.5, 2.0, 2.5]
+    ks = [2.0]
     comm_ranges = [10, 25, 99]
 
-    alpha_risks = [0.5, 1.0, 2.0]
-    max_rounds_list = [1, 3, 5]
+    alpha_risks = [1.0]
+    max_rounds_list = [5]
 
     base = build_base_config()
 

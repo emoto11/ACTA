@@ -1,5 +1,10 @@
-scenario_name: "toy_scenario_001"
-output_dir: results
+# scenario_name: "toy_scenario_001"
+# output_dir: results
+# scenario_name: "toy_GA"
+# output_dir: results/GA
+scenario_name: "toy_ADS"
+output_dir: results/ADS
+
 
 space:
   width: 100.0
@@ -33,12 +38,12 @@ failure_model:
 #   module: acta.sim.task_selection
 #   class: GABasedTaskSelector
 #   params:
-#     interval: 50
+#     interval: 50    # 変更可
 #     pop_size: 100
 #     generations: 1000
 #     elitism_rate: 0.1
 #     seed: 123
-#     L_max: 5
+#     L_max: 5        # 変更可
 #     seed: 1234
 #     trials: 5
 

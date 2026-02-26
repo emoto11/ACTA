@@ -72,9 +72,9 @@ def main() -> None:
         "tasks_sobol20.csv",
     ]
     lams = [100, 250, 400]
-    ks = [1.5, 2.0, 2.5]
+    ks = [2.0]
     comm_ranges = [10, 25, 99]
-    intervals_generations = [(50, 100), (250, 500), (500, 1000)]
+    intervals_generations = [(250, 500)]
 
     base = build_base_config()
 

@@ -6,6 +6,7 @@ from pathlib import Path
 import pandas as pd
 import matplotlib.pyplot as plt
 
+
 def load_and_merge(csv_files: list[Path]) -> pd.DataFrame:
     """
     複数 seed の commander.csv を読み込み、
@@ -86,12 +87,22 @@ def main():
     Path("figures").mkdir(parents=True, exist_ok=True)
     out_path = Path("figures") / args.out
 
+    # ===== style: no title + big labels/ticks =====
+    LABEL_FS = 22
+    TICK_FS  = 18
+    LEG_FS   = 14   # 凡例
 
-    plt.xlabel("Step")
-    plt.ylabel("Information age (sum)")
-    plt.title("Commander information age (mean ± std)")
-    plt.legend()
+    plt.xlabel("Step", fontsize=LABEL_FS)
+    plt.ylabel("Information age (sum)", fontsize=LABEL_FS)
+    plt.tick_params(axis="both", which="major", labelsize=TICK_FS)
+    plt.legend(fontsize=LEG_FS)
     plt.grid(True)
+
+    # plt.xlabel("Step")
+    # plt.ylabel("Information age (sum)")
+    # plt.title("Commander information age (mean ± std)")
+    # plt.legend()
+    # plt.grid(True)
 
     plt.tight_layout()
     plt.savefig(out_path, dpi=300)

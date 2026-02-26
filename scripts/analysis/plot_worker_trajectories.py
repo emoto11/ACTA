@@ -74,14 +74,26 @@ def plot_trajectories(workers_csv: Path, out_path: Path, thin: int = 1) -> None:
         ax.scatter(g["x"].iloc[0], g["y"].iloc[0], marker="o")
         ax.scatter(g["x"].iloc[-1], g["y"].iloc[-1], marker="x")
 
-    ax.set_xlabel("x")
-    ax.set_ylabel("y")
-    ax.set_title(f"Worker trajectories (median trial)\n{workers_csv.name}")
+
+    # 変更後（タイトルなし＋大きく）
+    LABEL_FS = 26
+    TICK_FS  = 20
+    LEG_FS   = 12  # 軌跡は凡例が邪魔なら小さめ推奨
+
+    ax.set_xlabel("x", fontsize=LABEL_FS)
+    ax.set_ylabel("y", fontsize=LABEL_FS)
+    # ax.set_title(...)  ←削除 or コメントアウト
+    ax.tick_params(axis="both", which="major", labelsize=TICK_FS)
+    ax.legend(loc="best", fontsize=LEG_FS, ncol=2)
+
+    # ax.set_xlabel("x")
+    # ax.set_ylabel("y")
+    # ax.set_title(f"Worker trajectories (median trial)\n{workers_csv.name}")
     ax.set_aspect("equal", adjustable="box")
     ax.grid(True)
 
     # ワーカーが多いと凡例が邪魔なので、必要なら消せるようにしたい場合は後でオプション化します
-    ax.legend(loc="best", fontsize="small", ncol=2)
+    # ax.legend(loc="best", fontsize="small", ncol=2)
 
     plt.tight_layout()
     plt.savefig(out_path, dpi=300)
