@@ -153,7 +153,150 @@ failure_model.params: モデルパラメータ。
 
 8. 入力データ（ワーカー・タスク）  
 workers_csv: ワーカー初期配置や性能を定義する CSV。  
-tasks_csv: タスク座標や仕事量などを定義する CSV。  
+tasks_csv: タスク座標や仕事量などを定義する CSV。
+
+
+---
+
+# 引継ぎメモ（まずこれだけ読めば動かせる）
+
+このリポジトリは、極限環境におけるタスクアロケーションのシミュレーション基盤です。
+中央集権（GA）と自律分散（ADS）を同一条件で実行し、結果CSV（results）を集計・作図（figures）します。
+
+## ディレクトリの役割（ざっくり）
+- `configs/`：シナリオ定義（YAML）。`configs/ga/` と `configs/ads/` に条件一式が入る
+- `src/acta/`：シミュレーション本体（Mesa、タスク選択、故障モデル、config_loader等）
+- `scripts/`：
+  - `run_sim_once.py`：YAMLを1つ指定してシミュレーションを1回回す入口
+  - `batch_run.sh`：動作確認（GAの1条件を自動選択して seed0–9 を回す）
+  - `batch_run_36x10.sh`：本番（GA→ADSを全条件、seed0–9で回す）
+  - `scenario_maker/`：YAML生成（必要なときだけ）
+  - `analysis/`：結果集計・作図
+- `tasks/`：タスクCSV（※本環境では既に存在する前提）
+- `workers/`：ワーカーCSV
+- `results/`：実験出力（CSV等。GitHubには中身を置かない運用）
+- `figures/`：図出力（PNG等。GitHubには中身を置かない運用）
+
+---
+
+## 使い方（yaml生成 → 実行 → 集計 → 図出力）
+以下はすべてリポジトリルート（ACTA/）で実行する。
+
+
+### Step 0. 環境構築（uv）
+```bash
+uv sync
+```
+## Step 1. YAML生成（必要なときだけ）
+
+configs/ga/ と configs/ads/ が既にあるならスキップでOK。再生成したいときだけ実行。
+```bash
+uv run python scripts/scenario_maker/generate_scenario_yaml_ga.py
+uv run python scripts/scenario_maker/generate_scenario_yaml_ads.py
+```
+## Step 2. 動作確認（GA 1条件×seed0–9 → 図出力まで）
+2-1) 実行（GA 1条件×seed0–9）
+
+batch_run.sh は configs/ga/*.yml から1つ自動選択して seed0–9 を回す。
+```bash
+bash scripts/batch_run.sh
+```
+2-2) OUTDIR（出力先）取得
+
+batch_run.sh と同じ選び方で、今回の output_dir（結果が出たフォルダ）を取得する。
+
+```bash
+SCENARIO="$(ls -1 configs/ga/*.yml | sort | head -n 1)"
+OUTDIR="$(grep -m1 '^output_dir:' "$SCENARIO" | awk '{print $2}')"
+echo "[SCENARIO] $SCENARIO"
+echo "[OUTDIR]   $OUTDIR"
+2-3) 作図（平均）
+uv run python scripts/analysis/plot_total_remaining_work.py \
+  --dir "$OUTDIR" --pattern "*_tasks.csv" \
+  --out "smoke_total_remaining_work.png" --figdir figures
+
+uv run python scripts/analysis/plot_info_age.py \
+  --dir "$OUTDIR" --pattern "*_commander.csv" \
+  --out "smoke_info_age.png"
+
+uv run python scripts/analysis/plot_worker_trajectories.py \
+  --dir "$OUTDIR" --pattern "*_seed0000_workers.csv" \
+  --out "smoke_traj_seed0000.png" --figdir figures
+```
+## Step 3. 本番（36条件×seed0–9）
+```bash
+bash scripts/batch_run_36x10.sh
+```
+## Step 4. makespan集計（36条件・seed0–9）
+```bash
+uv run python scripts/analysis/make_makespan_table_36_seed0_9.py
+```
+
+補足：出力CSVの n_GA / n_ADS が 10 でない行は、その条件のseedが欠けている → 追加実行対象。
+
+## Step 5. 図出力（まとめて作る：OUTDIRリストを回す）
+
+全条件の図を出すと数が多いので、作図したい条件だけ OUTDIRS に列挙して一括生成する。
+（残タスク量・情報鮮度はseed0–9をまとめて読む＝平均、軌跡は代表seed0000）
+
+5-1) その場で一括作図（コマンド一発）
+```bash
+OUTDIRS=(
+  "results/GA/sobol20_lam250_k20_r25_int250"
+  "results/ADS/sobol20_lam250_k20_r25_a1p0_mr5"
+  # 追加したい条件をここに書く
+)
+
+for OUTDIR in "${OUTDIRS[@]}"; do
+  name="$(basename "$OUTDIR")"
+
+  uv run python scripts/analysis/plot_total_remaining_work.py \
+    --dir "$OUTDIR" --pattern "*_tasks.csv" \
+    --out "${name}_remaining_work.png" --figdir figures
+
+  uv run python scripts/analysis/plot_info_age.py \
+    --dir "$OUTDIR" --pattern "*_commander.csv" \
+    --out "${name}_info_age.png"
+
+  uv run python scripts/analysis/plot_worker_trajectories.py \
+    --dir "$OUTDIR" --pattern "*_seed0000_workers.csv" \
+    --out "${name}_traj_seed0000.png" --figdir figures
+done
+```
+5-2) スクリプト化（おすすめ）
+
+上の内容を scripts/plot_selected.sh に保存して実行すると楽。
+```bash
+cat > scripts/plot_selected.sh <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+
+OUTDIRS=(
+  "results/GA/sobol20_lam250_k20_r25_int250"
+  "results/ADS/sobol20_lam250_k20_r25_a1p0_mr5"
+)
+
+for OUTDIR in "${OUTDIRS[@]}"; do
+  name="$(basename "$OUTDIR")"
+
+  uv run python scripts/analysis/plot_total_remaining_work.py \
+    --dir "$OUTDIR" --pattern "*_tasks.csv" \
+    --out "${name}_remaining_work.png" --figdir figures
+
+  uv run python scripts/analysis/plot_info_age.py \
+    --dir "$OUTDIR" --pattern "*_commander.csv" \
+    --out "${name}_info_age.png"
+
+  uv run python scripts/analysis/plot_worker_trajectories.py \
+    --dir "$OUTDIR" --pattern "*_seed0000_workers.csv" \
+    --out "${name}_traj_seed0000.png" --figdir figures
+done
+EOF
+
+chmod +x scripts/plot_selected.sh
+bash scripts/plot_selected.sh
+```
+---
 
 # TODO:
 - 情報鮮度による全体<->自律の戦略変更 の実装
